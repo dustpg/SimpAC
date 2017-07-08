@@ -4,6 +4,8 @@
 
 // attribute selector? obj[attr="sb"]
 #define SAC_ATTRIBUTE_SELECTOR
+// pure virtual ?
+#define SAC_PURE_VIRTUAL
 
 
 // simpac namespace
@@ -23,6 +25,12 @@ namespace SimpAC {
     enum Combinators : uint32_t;
     // Combinators
     enum BasicSelectors : uint32_t;
+    // pure virtual ?
+#ifdef SAC_PURE_VIRTUAL
+#define SAC_PURE_VIRTUAL_SUFFIX = 0
+#else
+#define SAC_PURE_VIRTUAL_SUFFIX
+#endif
     /// <summary>
     /// document
     /// </summary>
@@ -45,24 +53,24 @@ namespace SimpAC {
         auto parse_selector_lv1(char, combinator_state&) noexcept->css_state;
     private:
         // add a comment
-        virtual void add_comment(StrPair) noexcept;
+        virtual void add_comment(StrPair) noexcept SAC_PURE_VIRTUAL_SUFFIX;
         // add a selector
-        virtual void add_selector(BasicSelectors, StrPair) noexcept;
+        virtual void add_selector(BasicSelectors, StrPair) noexcept SAC_PURE_VIRTUAL_SUFFIX;
         // add a selector-combinator
-        virtual void add_selector_combinator(Combinators) noexcept;
+        virtual void add_selector_combinator(Combinators) noexcept SAC_PURE_VIRTUAL_SUFFIX;
         // add a comma under selector
-        virtual void add_selector_comma() noexcept;
+        virtual void add_selector_comma() noexcept SAC_PURE_VIRTUAL_SUFFIX;
         // begin properties {
-        virtual void begin_properties() noexcept;
+        virtual void begin_properties() noexcept SAC_PURE_VIRTUAL_SUFFIX;
         // end properties }
-        virtual void end_properties() noexcept;
+        virtual void end_properties() noexcept SAC_PURE_VIRTUAL_SUFFIX;
         // add a property
-        virtual void begin_property(StrPair) noexcept;
+        virtual void begin_property(StrPair) noexcept SAC_PURE_VIRTUAL_SUFFIX;
         // add a value
-        virtual void add_value(StrPair) noexcept;
+        virtual void add_value(StrPair) noexcept SAC_PURE_VIRTUAL_SUFFIX;
 #ifdef SAC_ATTRIBUTE_SELECTOR
         // add a attribute selector
-        virtual void add_attribute_selector(BasicSelectors, StrPair, StrPair) noexcept;
+        virtual void add_attribute_selector(BasicSelectors, StrPair, StrPair) noexcept SAC_PURE_VIRTUAL_SUFFIX;
 #endif 
     protected:
     };

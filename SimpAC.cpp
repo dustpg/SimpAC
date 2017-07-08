@@ -76,6 +76,7 @@ enum class SimpAC::CACStream::css_state : unsigned {
 };
 
 
+#ifndef SAC_PURE_VIRTUAL
 /// <summary>
 /// Adds the comment.
 /// </summary>
@@ -150,10 +151,11 @@ void SimpAC::CACStream::add_value(StrPair value) noexcept {
 /// <returns></returns>
 void SimpAC::CACStream::add_attribute_selector(
     BasicSelectors type, StrPair attribute, StrPair value) noexcept {
+
 }
 #endif
 
-
+#endif
 
 /// <summary>
 /// Parses the comment.
@@ -226,6 +228,11 @@ auto SimpAC::CACStream::parse_selector_lv1(char ch, combinator_state& state) noe
 
 
 
+/// <summary>
+/// Loads the specified string.
+/// </summary>
+/// <param name="view">The view.</param>
+/// <returns></returns>
 void SimpAC::CACStream::Load(StrPair view) noexcept {
     // ״̬
     BasicSelectors selector;
