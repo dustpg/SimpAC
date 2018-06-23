@@ -2,7 +2,7 @@
 #include <cstring>
 #include <cstdio>
 
-const char * css_test = ""
+const char * css_test1 = ""
 "A,B,C:c(a,s),D{ font-family: \"Microsoft YaHei\"; }"
 
 "#btn0 { font-family: Microsoft YaHei; }"
@@ -11,6 +11,12 @@ const char * css_test = ""
 "\0"
 " .css * :hover , #ele {/*asd*/"
 " color: red   ; "
+"}"
+;
+
+const char * css_test = ""
+"button {\r\n"
+"  background: none \r\n"
 "}"
 ;
 

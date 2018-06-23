@@ -1,56 +1,62 @@
-#include "SimpAC.h"
+ï»¿#include "SimpAC.h"
 #include <cassert>
 
 
 
 // simpcs::impl namepsace
-namespace SimpAC { namespace impl {
-    // table for valid selector
-    static const uint32_t valid_selector_table[] = {
-        0x00000000, 0x03ff2000, 0x87fffffe, 0x07fffffe,
-    };
-#if 0
-    // table maker
-    void make_valid_selector_table() noexcept {
-        auto valid = [](char ch) noexcept {
-            return ch == '-' || ch == '_'
-                || (ch >= '0' && ch <= '9')
-                || (ch >= 'a' && ch <= 'z')
-                || (ch >= 'A' && ch <= 'Z')
-                ;
+namespace SimpAC {
+    namespace impl {
+        // table for valid selector
+        static const uint32_t valid_selector_table[] = {
+            0x00000000, 0x03ff2000, 0x87fffffe, 0x07fffffe,
         };
-        const int char_bit = CHAR_BIT;
-        const int len = 128 / char_bit * char_bit;
-        const int ary = len / char_bit / sizeof(uint32_t);
-        uint32_t buffer[ary];
-        std::memset(buffer, 0, sizeof buffer);
-        for (int i = 0; i <= len; ++i) {
-            const int index = i >> 5;
-            const int offset = i & 31;
-            buffer[index] |= valid(i) << offset;
-        }
-        if (const auto file = std::fopen("out.txt", "w")) {
-            for (auto x : buffer) {
-                std::fprintf(file, "0x%08x, ", x);
+#if 0
+        // table maker
+        void make_valid_selector_table() noexcept {
+            auto valid = [](char ch) noexcept {
+                return ch == '-' || ch == '_'
+                    || (ch >= '0' && ch <= '9')
+                    || (ch >= 'a' && ch <= 'z')
+                    || (ch >= 'A' && ch <= 'Z')
+                    ;
+            };
+            const int char_bit = CHAR_BIT;
+            const int len = 128 / char_bit * char_bit;
+            const int ary = len / char_bit / sizeof(uint32_t);
+            uint32_t buffer[ary];
+            std::memset(buffer, 0, sizeof buffer);
+            for (int i = 0; i <= len; ++i) {
+                const int index = i >> 5;
+                const int offset = i & 31;
+                buffer[index] |= valid(i) << offset;
             }
-            std::fclose(file);
-            std::exit(0);
+            if (const auto file = std::fopen("out.txt", "w")) {
+                for (auto x : buffer) {
+                    std::fprintf(file, "0x%08x, ", x);
+                }
+                std::fclose(file);
+                std::exit(0);
+            }
+        }
+#endif
+        // is space?
+        static inline bool is_space(char ch) noexcept {
+            return (ch == ' ') || (ch == '\t');
+        }
+        // is quot attr?
+        static inline bool is_quot(char ch) noexcept {
+            return (ch == '"') || (ch == '\'');
+        }
+        // is number start, TODO: remove ->
+        static auto is_valid_selector(char ch) noexcept -> uint32_t {
+            return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
+        }
+        // is valid property name
+        static auto is_valid_property_name(char ch) noexcept -> uint32_t {
+            return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
         }
     }
-#endif
-    // is space?
-    static inline bool is_space(char ch) noexcept {
-        return (ch == ' ') || (ch == '\t');
-    }
-    // is quot attr?
-    static inline bool is_quot(char ch) noexcept {
-        return (ch == '"') || (ch == '\'');
-    }
-    // is number start, TODO: remove ->
-    static auto is_valid_selector(char ch) noexcept -> uint32_t {
-        return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
-    }
-}}
+}
 
 /// <summary>
 /// state for combinator
@@ -163,13 +169,13 @@ void SimpAC::CACStream::add_attribute_selector(
 /// <param name="view">The view.</param>
 /// <returns></returns>
 bool SimpAC::CACStream::parse_comment(StrPair & view) noexcept {
-    // TODO: ½«µÚÒ»¸ö && ÅĞ¶Ï·Åµ½whileÀïÃæ¼õÉÙ´úÂëÁ¿
-    // /*×¢ÊÍ
+    // TODO: å°†ç¬¬ä¸€ä¸ª && åˆ¤æ–­æ”¾åˆ°whileé‡Œé¢å‡å°‘ä»£ç é‡
+    // /*æ³¨é‡Š
     if (view.first + 1 < view.second && view.first[1] == '*') {
         view.first += 2;
         auto comment_view = view;
         bool comment = false;
-        // ±éÀúÖ±µ½×Ö·û´®½áÊø»òÕßÓöµ½*/
+        // éå†ç›´åˆ°å­—ç¬¦ä¸²ç»“æŸæˆ–è€…é‡åˆ°*/
         while (view.first < view.second) {
             if (comment) {
                 if (view.first[0] == '/') break;
@@ -178,7 +184,7 @@ bool SimpAC::CACStream::parse_comment(StrPair & view) noexcept {
             else if (view.first[0] == '*') comment = true;
             ++view.first;
         }
-        // È¥µôÒ»¸ö*
+        // å»æ‰ä¸€ä¸ª*
         comment_view.second = view.first - 1;
         this->add_comment(comment_view);
         ++view.first;
@@ -234,29 +240,29 @@ auto SimpAC::CACStream::parse_selector_lv1(char ch, combinator_state& state) noe
 /// <param name="view">The view.</param>
 /// <returns></returns>
 void SimpAC::CACStream::Load(StrPair view) noexcept {
-    // ×´Ì¬
+    // çŠ¶æ€
     BasicSelectors selector;
     //Combinators combinator;
-    StrPair this_view, ex_view;
+    StrPair this_view/*, ex_view*/;
     char last_quot = 0;
     auto state = css_state::standby;
     auto show_combinator = combinator_state::reset;
-    // ´¦Àí×´Ì¬
+    // å¤„ç†çŠ¶æ€
     while (view.first < view.second) {
-        // ÓÅÏÈ´¦Àí×¢ÊÍ
+        // ä¼˜å…ˆå¤„ç†æ³¨é‡Š
         if (view.first[0] == '/' && this->parse_comment(view))
             continue;
-        // µ±Ç°´¦Àí×Ö·û
+        // å½“å‰å¤„ç†å­—ç¬¦
         const auto ch = view.first[0];
-        // ×´Ì¬´¦Àí
+        // çŠ¶æ€å¤„ç†
         switch (state)
         {
         case css_state::standby:
-            // Ä¬ÈÏµÄÔªËØÑ¡ÔñÆ÷
+            // é»˜è®¤çš„å…ƒç´ é€‰æ‹©å™¨
             selector = BasicSelectors::Selectors_Type;
             this_view.first = view.first + 1;
             state = this->parse_selector_lv1(ch, show_combinator);
-            // ²»ÄÜÍÑµôÊ××Ö·û
+            // ä¸èƒ½è„±æ‰é¦–å­—ç¬¦
             if (state == css_state::selectors) this_view.first--;
             break;
         case css_state::adjacent:
@@ -275,45 +281,45 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             show_combinator = combinator_state::release;
             continue;
         case css_state::pseudo:
-            // Î±ÔªËØÑ¡ÔñÆ÷
+            // ä¼ªå…ƒç´ é€‰æ‹©å™¨
             if (ch == ':') {
                 this_view.first = view.first + 1;
                 selector = BasicSelectors::Selectors_PseudoElement;
             }
-            // Î±ÀàÑ¡ÔñÆ÷
+            // ä¼ªç±»é€‰æ‹©å™¨
             else selector = BasicSelectors::Selectors_PseudoClass;
             state = css_state::selectors;
             break;
         case css_state::id:
-            // idÑ¡ÔñÆ÷
+            // idé€‰æ‹©å™¨
             selector = BasicSelectors::Selectors_Id;
             state = css_state::selectors;
             break;
         case css_state::class_:
-            // ÀàÑ¡ÔñÆ÷
+            // ç±»é€‰æ‹©å™¨
             selector = BasicSelectors::Selectors_Class;
             state = css_state::selectors;
             break;
         case css_state::universal:
-            // Í¨ÓÃÑ¡ÔñÆ÷
+            // é€šç”¨é€‰æ‹©å™¨
             selector = BasicSelectors::Selectors_Universal;
             state = css_state::selectors;
             continue;
         case css_state::selectors:
-            // ¼ì²é¹ØÏµÑ¡ÔñÆ÷×´Ì¬
+            // æ£€æŸ¥å…³ç³»é€‰æ‹©å™¨çŠ¶æ€
             if (show_combinator == combinator_state::ready) {
                 this->add_selector_combinator(Combinators_Descendant);
             }
             show_combinator = combinator_state::has;
-            // À¨ºÅ?
+            // æ‹¬å·?
             if (ch == '(') {
                 while (*view.first != ')') ++view.first;
                 ++view.first;
                 assert(view.first <= view.second && "out of string");
-                // TODO: ×¢ÊÍÖ§³Ö
+                // TODO: æ³¨é‡Šæ”¯æŒ
                 goto invalid_selector;
             }
-            // ÎŞĞ§Ñ¡ÔñÆ÷×Ö·û -> Íê³ÉÑ¡ÔñÆ÷
+            // æ— æ•ˆé€‰æ‹©å™¨å­—ç¬¦ -> å®Œæˆé€‰æ‹©å™¨
             else if (!impl::is_valid_selector(ch)) {
             invalid_selector:
                 this_view.second = view.first;
@@ -323,44 +329,44 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             }
             break;
         case css_state::properties:
-            // ½áÊø±¾¹æÔò¼¯
+            // ç»“æŸæœ¬è§„åˆ™é›†
             if (ch == '}') goto end_of_properties;
-            // ºöÂÔµ¥¶ÀµÄ ;
+            // å¿½ç•¥å•ç‹¬çš„ ;
             else if (ch == ';');
-            // ÆäËû·Ç¿Õ¸ñ
-            else if (!impl::is_space(ch)) {
+            // å…¶ä»–æœ‰æ•ˆå­—ç¬¦
+            else if (impl::is_valid_property_name(ch)) {
                 this_view.first = view.first;
                 state = css_state::properties_end;
             }
             break;
         case css_state::properties_end:
-            // ²éÕÒ¿Õ¸ñ»òÕß:
+            // æŸ¥æ‰¾ç©ºæ ¼æˆ–è€…:
             if (ch == ':' || impl::is_space(ch)) {
                 this_view.second = view.first;
                 this->begin_property(this_view);
-                // Ö±µ½Ìø¹ıÃ°ºÅ
+                // ç›´åˆ°è·³è¿‡å†’å·
                 while (*view.first != ':') ++view.first;
                 assert(view.first <= view.second && "out of string");
-                // TODO: ×¢ÊÍÖ§³Ö
+                // TODO: æ³¨é‡Šæ”¯æŒ
 
-                // ÇĞ»»µ½Öµ×´Ì¬
+                // åˆ‡æ¢åˆ°å€¼çŠ¶æ€
                 state = css_state::values;
             }
             break;
         case css_state::values:
-            // ÏÂÌõ¹æÔò
+            // ä¸‹æ¡è§„åˆ™
             if (ch == ';') state = css_state::properties;
-            // Ö±½Ó½áÊø
+            // ç›´æ¥ç»“æŸ
             else if (ch == '}') goto end_of_properties;
-            // Ñ°ÕÒÖµÆğÊ¼µã
+            // å¯»æ‰¾å€¼èµ·å§‹ç‚¹
             else if (!impl::is_space(ch)) {
-                // Ã°ºÅ?
+                // å†’å·?
                 if (impl::is_quot(ch)) {
                     last_quot = ch;
                     this_view.first = view.first + 1;
                     state = css_state::values_quot;
                 }
-                // ×óÀ¨ºÅ?
+                // å·¦æ‹¬å·?
                 else /*if (ch == '(') {
                      assert(!"NOT IMPL");
                      }
@@ -371,7 +377,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             }
             break;
         case css_state::values_quot:
-            // Ñ°ÕÒÖµ½áÊøµã
+            // å¯»æ‰¾å€¼ç»“æŸç‚¹
             if (ch == last_quot) {
                 this_view.second = view.first;
                 this->add_value(this_view);
@@ -379,7 +385,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             }
             break;
         case css_state::values_end:
-            // Ñ°ÕÒÖµ½áÊøµã
+            // å¯»æ‰¾å€¼ç»“æŸç‚¹
             if (impl::is_space(ch) || ch == ';') {
                 this_view.second = view.first;
                 this->add_value(this_view);
@@ -397,14 +403,14 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             break;
 #ifdef SAC_ATTRIBUTE_SELECTOR
         case css_state::attribute:
-            // ÊôĞÔÑ¡ÔñÆ÷, ½×¶Î1, Ñ°ÕÒ¼ü
+            // å±æ€§é€‰æ‹©å™¨, é˜¶æ®µ1, å¯»æ‰¾é”®
             if (!impl::is_space(ch)) {
                 this_view.first = view.first;
                 selector = BasicSelectors::Selectors_AttributeSet;
                 state = css_state::attribute_type;
             }
         case css_state::attribute_type:
-            // ÊôĞÔÑ¡ÔñÆ÷, ½×¶Î3, Ñ°ÕÒÊôĞÔÑ¡ÔñÆ÷ÀàĞÍ
+            // å±æ€§é€‰æ‹©å™¨, é˜¶æ®µ3, å¯»æ‰¾å±æ€§é€‰æ‹©å™¨ç±»å‹
         {
             switch (ch)
             {
@@ -414,7 +420,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             case ' ': case '\t':
                 break;
             case ']':
-                // Ö±½Ó½áÊø
+                // ç›´æ¥ç»“æŸ
                 goto end_of_attribute;
             case '=':
                 selector = BasicSelectors::Selectors_AttributeExact;
@@ -443,21 +449,21 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
         }
         break;
         case css_state::attribute_value_begin:
-            // ÊôĞÔÑ¡ÔñÆ÷, ½×¶Î4, Ñ°ÕÒÖµÆğÊ¼
+            // å±æ€§é€‰æ‹©å™¨, é˜¶æ®µ4, å¯»æ‰¾å€¼èµ·å§‹
             if (!impl::is_space(ch)) {
                 ex_view.first = impl::is_quot(ch) ? view.first + 1 : view.first;
                 state = css_state::attribute_value_end;
             }
             break;
         case css_state::attribute_value_end:
-            // ÊôĞÔÑ¡ÔñÆ÷, ½×¶Î5, Ñ°ÕÒÖµ½áÊø
+            // å±æ€§é€‰æ‹©å™¨, é˜¶æ®µ5, å¯»æ‰¾å€¼ç»“æŸ
             if (impl::is_quot(ch) || impl::is_space(ch)) {
                 ex_view.second = view.first;
                 state = css_state::attribute_end;
             }
             break;
         case css_state::attribute_end:
-            // ÊôĞÔÑ¡ÔñÆ÷, ½×¶Î6, Ñ°ÕÒÊôĞÔ½áÊø
+            // å±æ€§é€‰æ‹©å™¨, é˜¶æ®µ6, å¯»æ‰¾å±æ€§ç»“æŸ
             if (ch == ']') {
             end_of_attribute:
                 this->add_attribute_selector(selector, this_view, ex_view);
@@ -466,7 +472,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             break;
 #endif
         }
-        // ÍÆ½ø
+        // æ¨è¿›
         ++view.first;
     }
 }
