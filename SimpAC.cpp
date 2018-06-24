@@ -243,7 +243,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
     // 状态
     BasicSelectors selector;
     //Combinators combinator;
-    StrPair this_view/*, ex_view*/;
+    StrPair this_view, ex_view;
     char last_quot = 0;
     auto state = css_state::standby;
     auto show_combinator = combinator_state::reset;
