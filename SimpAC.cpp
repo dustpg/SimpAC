@@ -263,9 +263,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
         {
         case css_state::standby:
             // standby 跳过无用字符
-            if (impl::is_space(ch) || impl::is_newline(ch)) {
-                break;
-            }
+            if (impl::is_newline(ch)) break;
             // 默认的元素选择器
             selector = BasicSelectors::Selectors_Type;
             this_view.first = view.first + 1;
