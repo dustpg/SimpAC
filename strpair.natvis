@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="SimpAC::StrPair">
+    <DisplayString>{first,[(second-first)] s8}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">second-first</Item>
+      <ArrayItems>
+        <Size>second-first</Size>
+        <ValuePointer>first</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>

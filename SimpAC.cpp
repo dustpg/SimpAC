@@ -43,6 +43,10 @@ namespace SimpAC {
         static inline bool is_space(char ch) noexcept {
             return (ch == ' ') || (ch == '\t');
         }
+        // is new line?
+        static inline bool is_newline(char ch) noexcept {
+            return (ch == '\r') || (ch == '\n');
+        }
         // is quot attr?
         static inline bool is_quot(char ch) noexcept {
             return (ch == '"') || (ch == '\'');
@@ -258,6 +262,10 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
         switch (state)
         {
         case css_state::standby:
+            // standby 跳过无用字符
+            if (impl::is_space(ch) || impl::is_newline(ch)) {
+                break;
+            }
             // 默认的元素选择器
             selector = BasicSelectors::Selectors_Type;
             this_view.first = view.first + 1;
@@ -271,7 +279,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             goto add_combinator;
         case css_state::general:
             // A ~ B
-            this->add_selector_combinator(Combinators_General);
+            this->add_selector_combinator(Combinators_GeneralSibling);
             goto add_combinator;
         case css_state::child:
             // A + B
@@ -386,10 +394,10 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             break;
         case css_state::values_end:
             // 寻找值结束点
-            if (impl::is_space(ch) || ch == ';') {
+            if (impl::is_space(ch) || impl::is_newline(ch) || ch == ';') {
                 this_view.second = view.first;
                 this->add_value(this_view);
-                state = ch == ';'
+                state = (ch == ';')
                     ? css_state::properties
                     : css_state::values;
             }

@@ -3,6 +3,8 @@
 #include <cstdio>
 
 const char * css_test1 = ""
+
+
 "A,B,C:c(a,s),D{ font-family: \"Microsoft YaHei\"; }"
 
 "#btn0 { font-family: Microsoft YaHei; }"
@@ -14,10 +16,20 @@ const char * css_test1 = ""
 "}"
 ;
 
-const char * css_test = ""
-"button {\r\n"
-"  background: none \r\n"
-"}"
+const char * css_test = u8R"(
+
+
+button#button, #layout .button{
+    -moz-appearance: none;
+    background-color: red;
+    background-color: blue;
+}
+
+#layout button:hover {
+    background-color: yellow
+}
+
+)"
 ;
 
 using namespace SimpAC;
@@ -130,7 +142,7 @@ void Css::add_selector_combinator(Combinators c) noexcept {
     case Combinators_AdjacentSibling:
         str = "A + B";
         break;
-    case Combinators_General:
+    case Combinators_GeneralSibling:
         str = "A ~ B";
         break;
     case Combinators_Child:
