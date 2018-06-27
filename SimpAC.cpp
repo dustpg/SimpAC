@@ -365,7 +365,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             // 直接结束
             else if (ch == '}') goto end_of_properties;
             // 寻找值起始点
-            else if (!impl::is_space(ch)) {
+            else if (!(impl::is_space(ch) || impl::is_newline(ch))) {
                 // 冒号?
                 if (impl::is_quot(ch)) {
                     last_quot = ch;

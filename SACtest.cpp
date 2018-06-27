@@ -18,17 +18,25 @@ const char * css_test1 = ""
 
 const char * css_test = u8R"(
 
-
 button#button, #layout .button{
     -moz-appearance: none;
+    transition: 0.5s;
     background-color: red;
     background-color: blue;
 }
 
 #layout button:hover {
     background-color: yellow
+
+
 }
 
+.imgButton {
+    -moz-appearance: none;
+    border-width: 3px;
+    border-image-source: url(../images/btn.png);
+    border-image-slice: 3 fill;
+}
 )"
 ;
 
