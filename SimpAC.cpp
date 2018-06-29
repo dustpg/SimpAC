@@ -1,77 +1,73 @@
 ﻿#include "SimpAC.h"
 #include <cassert>
 
-
-
 // simpcs::impl namepsace
-namespace SimpAC {
-    namespace impl {
-        // table for valid selector
-        static const uint32_t valid_selector_table[] = {
-            0x00000000, 0x03ff2000, 0x87fffffe, 0x07fffffe,
-        };
+namespace SimpAC { namespace impl {
+    // table for valid selector
+    static const uint32_t valid_selector_table[] = {
+        0x00000000, 0x03ff2000, 0x87fffffe, 0x07fffffe,
+    };
 #if 0
-        // table maker
-        void make_valid_selector_table() noexcept {
-            auto valid = [](char ch) noexcept {
-                return ch == '-' || ch == '_'
-                    || (ch >= '0' && ch <= '9')
-                    || (ch >= 'a' && ch <= 'z')
-                    || (ch >= 'A' && ch <= 'Z')
-                    ;
-            };
-            const int char_bit = CHAR_BIT;
-            const int len = 128 / char_bit * char_bit;
-            const int ary = len / char_bit / sizeof(uint32_t);
-            uint32_t buffer[ary];
-            std::memset(buffer, 0, sizeof buffer);
-            for (int i = 0; i <= len; ++i) {
-                const int index = i >> 5;
-                const int offset = i & 31;
-                buffer[index] |= valid(i) << offset;
+    // table maker
+    void make_valid_selector_table() noexcept {
+        auto valid = [](char ch) noexcept {
+            return ch == '-' || ch == '_'
+                || (ch >= '0' && ch <= '9')
+                || (ch >= 'a' && ch <= 'z')
+                || (ch >= 'A' && ch <= 'Z')
+                ;
+        };
+        const int char_bit = CHAR_BIT;
+        const int len = 128 / char_bit * char_bit;
+        const int ary = len / char_bit / sizeof(uint32_t);
+        uint32_t buffer[ary];
+        std::memset(buffer, 0, sizeof buffer);
+        for (int i = 0; i <= len; ++i) {
+            const int index = i >> 5;
+            const int offset = i & 31;
+            buffer[index] |= valid(i) << offset;
+        }
+        if (const auto file = std::fopen("out.txt", "w")) {
+            for (auto x : buffer) {
+                std::fprintf(file, "0x%08x, ", x);
             }
-            if (const auto file = std::fopen("out.txt", "w")) {
-                for (auto x : buffer) {
-                    std::fprintf(file, "0x%08x, ", x);
-                }
-                std::fclose(file);
-                std::exit(0);
-            }
+            std::fclose(file);
+            std::exit(0);
         }
-#endif
-        // is space?
-        static inline bool is_space(char ch) noexcept {
-            return (ch == ' ') || (ch == '\t');
-        }
-        // is new line?
-        static inline bool is_newline(char ch) noexcept {
-            return (ch == '\r') || (ch == '\n');
-        }
-        // is quot attr?
-        static inline bool is_quot(char ch) noexcept {
-            return (ch == '"') || (ch == '\'');
-        }
-        // is number start, TODO: remove ->
-        static auto is_valid_selector(char ch) noexcept -> uint32_t {
-            return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
-        }
-        // is valid property name
-        static auto is_valid_property_name(char ch) noexcept -> uint32_t {
-            return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
-        }
-        // bkdr hash
-        auto bkdr(const Char* strbgn, const Char* strend) noexcept -> uint32_t {
-            const uint32_t seed = 131;
-            const auto* itr = strbgn;
-            const auto itrend = strend;
-            uint32_t hash = 0;
-            while (itr != itrend) hash = hash * seed + (*itr++);
-            return hash;
-        }
-        // parse func
-        auto parse_func(StrPair pair) noexcept->FuncType;
     }
-}
+#endif
+    // is space?
+    static inline bool is_space(char ch) noexcept {
+        return (ch == ' ') || (ch == '\t');
+    }
+    // is new line?
+    static inline bool is_newline(char ch) noexcept {
+        return (ch == '\r') || (ch == '\n');
+    }
+    // is quot attr?
+    static inline bool is_quot(char ch) noexcept {
+        return (ch == '"') || (ch == '\'');
+    }
+    // is number start, TODO: remove ->
+    static auto is_valid_selector(char ch) noexcept -> uint32_t {
+        return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
+    }
+    // is valid property name
+    static auto is_valid_property_name(char ch) noexcept -> uint32_t {
+        return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
+    }
+    // bkdr hash
+    auto bkdr(const Char* strbgn, const Char* strend) noexcept -> uint32_t {
+        const uint32_t seed = 131;
+        const auto* itr = strbgn;
+        const auto itrend = strend;
+        uint32_t hash = 0;
+        while (itr != itrend) hash = hash * seed + (*itr++);
+        return hash;
+    }
+    // parse func
+    auto parse_func(StrPair pair) noexcept->FuncType;
+}}
 
 /// <summary>
 /// state for combinator
@@ -274,7 +270,7 @@ auto SimpAC::SplitUnit(StrPair& pair) noexcept -> StrPair {
         // 最后一个允许.
         // 1e-1
         // 1.
-        if ((ch >= '0' && ch <= '9')|| ch == '.') {
+        if ((ch >= '0' && ch <= '9') || ch == '.') {
             ++rv.first;
             break;
         }
@@ -573,7 +569,7 @@ namespace SimpAC {
         0x95a5aee0, // repeating-radial-gradient
         0x001e0f19, // rgb
         0x0f61ba2c, // rgba
-        0x001f183b, // url
+        0x001edddf, // url
         0x001f183b, // var
     };
 }
@@ -586,7 +582,7 @@ namespace SimpAC {
 auto SimpAC::impl::parse_func(StrPair pair) noexcept -> FuncType {
     const auto hash = impl::bkdr(pair.begin(), pair.end());
     auto itr = FUNC_HASH_LIST;
-    const auto end = FUNC_HASH_LIST + 
+    const auto end = FUNC_HASH_LIST +
         sizeof(FUNC_HASH_LIST) / sizeof(FUNC_HASH_LIST[0]);
     for (; itr != end; ++itr) if (hash == *itr) break;
     return static_cast<FuncType>((itr - FUNC_HASH_LIST) + 1);
