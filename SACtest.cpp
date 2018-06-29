@@ -26,7 +26,13 @@ button#button, #layout .button{
 }
 
 #layout button:hover {
-    background-color: yellow
+    background-color: yellow "sad";
+
+
+    color: rgb(255,20,0) ;
+
+
+    background-image: url('../images/2 5.png') ;
 
 
 }
@@ -51,6 +57,7 @@ struct Css final : SimpAC::CACStream {
     virtual void end_properties() noexcept override;
     virtual void begin_property(StrPair) noexcept override;
     virtual void add_value(StrPair) noexcept override;
+    virtual void add_func_value(FuncValue, StrPair) noexcept override;
     virtual void add_attribute_selector(BasicSelectors, StrPair, StrPair) noexcept override;
     static void printf(StrPair);
 };
@@ -59,7 +66,12 @@ struct Css final : SimpAC::CACStream {
 int main() {
     Css parser;
     parser.Load({ css_test, css_test + std::strlen(css_test) });
-    std::getchar();
+    //std::printf("\nPRESS 'O' to OUTPUT FUNC-LIST\n");
+    const char ch = std::getchar();
+    //if (ch == 'O' || ch == 'o') {
+
+    //    std::getchar();
+    //}
     return 0;
 }
 
@@ -185,5 +197,13 @@ void Css::begin_property(StrPair view) noexcept {
 void Css::add_value(StrPair view) noexcept {
     std::printf("  --add_value: ");
     this->printf(view);
+    std::putchar('\n');
+}
+
+void Css::add_func_value(FuncValue value, StrPair raw_func) noexcept {
+    std::printf("  --add_value: ");
+    this->printf(raw_func);
+    std::putchar(':');
+    this->printf(StrPair{ value.first, value.first + value.length });
     std::putchar('\n');
 }

@@ -59,6 +59,17 @@ namespace SimpAC {
         static auto is_valid_property_name(char ch) noexcept -> uint32_t {
             return valid_selector_table[ch >> 5] & uint32_t(1 << (ch & 31));
         }
+        // bkdr hash
+        auto bkdr(const Char* strbgn, const Char* strend) noexcept -> uint32_t {
+            const uint32_t seed = 131;
+            const auto* itr = strbgn;
+            const auto itrend = strend;
+            uint32_t hash = 0;
+            while (itr != itrend) hash = hash * seed + (*itr++);
+            return hash;
+        }
+        // parse func
+        auto parse_func(StrPair pair) noexcept->FuncType;
     }
 }
 
@@ -75,9 +86,9 @@ enum class SimpAC::CACStream::combinator_state {
 enum class SimpAC::CACStream::css_state : unsigned {
     standby = 0, adjacent, general,
     child, pseudo, id, class_,
-    universal, selectors,
-    properties, properties_end,
-    values, values_quot, values_end, atrule,
+    universal, selectors, properties,
+    properties_end, values, values_quot,
+    values_end, values_func, atrule,
 #ifdef SAC_ATTRIBUTE_SELECTOR
     attribute,
     attribute_type, attribute_value_begin,
@@ -149,6 +160,16 @@ void SimpAC::CACStream::begin_property(StrPair property) noexcept {
 void SimpAC::CACStream::add_value(StrPair value) noexcept {
 }
 
+
+/// <summary>
+/// Adds the value.
+/// </summary>
+/// <param name="func">The function.</param>
+/// <param name="args">The arguments.</param>
+/// <returns></returns>
+void SimpAC::CACStream::add_func_value(StrPair func, StrPair args) noexcept {
+
+}
 
 
 #ifdef SAC_ATTRIBUTE_SELECTOR
@@ -273,7 +294,7 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
     BasicSelectors selector;
     //Combinators combinator;
     StrPair this_view, ex_view;
-    char last_quot = 0;
+    Char last_quot = 0, func_quot = 0;
     auto state = css_state::standby;
     auto show_combinator = combinator_state::reset;
     // 处理状态
@@ -391,17 +412,14 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             else if (ch == '}') goto end_of_properties;
             // 寻找值起始点
             else if (!(impl::is_space(ch) || impl::is_newline(ch))) {
-                // 冒号?
+                // 引号?
                 if (impl::is_quot(ch)) {
                     last_quot = ch;
                     this_view.first = view.first + 1;
                     state = css_state::values_quot;
                 }
-                // 左括号?
-                else /*if (ch == '(') {
-                     assert(!"NOT IMPL");
-                     }
-                     else*/ {
+                // 其他情况
+                else {
                     this_view.first = view.first;
                     state = css_state::values_end;
                 }
@@ -416,13 +434,44 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
             }
             break;
         case css_state::values_end:
+            // 函数支持
+            if (ch == '(') {
+                this_view.second = view.first;
+                ex_view.first = view.first + 1;
+                ex_view.second = nullptr;
+                state = css_state::values_func;
+            }
             // 寻找值结束点
-            if (impl::is_space(ch) || impl::is_newline(ch) || ch == ';') {
+            else if (impl::is_space(ch) || impl::is_newline(ch) || ch == ';') {
                 this_view.second = view.first;
                 this->add_value(this_view);
                 state = (ch == ';')
                     ? css_state::properties
                     : css_state::values;
+            }
+            break;
+        case css_state::values_func:
+            // 引号模式
+            if (func_quot) {
+                // 遇到相同的引号就结束
+                if (ch == func_quot) func_quot = 0;
+            }
+            // 正常模式
+            else {
+                // 遇到反括号结束
+                if (ch == ')') {
+                    ex_view.second = view.first;
+                    FuncValue fv;
+                    fv.first = ex_view.first;
+                    const auto length = ex_view.second - ex_view.first;
+                    assert(length >= 0 && length <= 0xffff);
+                    fv.length = static_cast<uint16_t>(length);
+                    fv.func = impl::parse_func(this_view);
+                    this->add_func_value(fv, this_view);
+                    state = css_state::values;
+                }
+                // 遇到引号
+                else if (impl::is_quot(ch)) func_quot = ch;
             }
             break;
         end_of_properties:
@@ -506,4 +555,39 @@ void SimpAC::CACStream::Load(StrPair view) noexcept {
         // 推进
         ++view.first;
     }
+}
+
+
+// simpac
+namespace SimpAC {
+    // hash list
+    static uint32_t FUNC_HASH_LIST[] = {
+        0x0d1e039d, // attr
+        0x0d5da101, // calc
+        0xfcbab3ce, // cubic-bezier
+        0x001b76ed, // hsl
+        0x0e0ddba8, // hsla
+        0x06b5f7bc, // linear-gradient
+        0x53770a2a, // radial-gradient
+        0x48e49c72, // repeating-linear-gradient
+        0x95a5aee0, // repeating-radial-gradient
+        0x001e0f19, // rgb
+        0x0f61ba2c, // rgba
+        0x001f183b, // url
+        0x001f183b, // var
+    };
+}
+
+/// <summary>
+/// Parses the function.
+/// </summary>
+/// <param name="pair">The pair.</param>
+/// <returns></returns>
+auto SimpAC::impl::parse_func(StrPair pair) noexcept -> FuncType {
+    const auto hash = impl::bkdr(pair.begin(), pair.end());
+    auto itr = FUNC_HASH_LIST;
+    const auto end = FUNC_HASH_LIST + 
+        sizeof(FUNC_HASH_LIST) / sizeof(FUNC_HASH_LIST[0]);
+    for (; itr != end; ++itr) if (hash == *itr) break;
+    return static_cast<FuncType>((itr - FUNC_HASH_LIST) + 1);
 }
