@@ -34,7 +34,7 @@ button#button, #layout .button{
 
     background-image: url('../images/2 5.png') ;
 
-
+    font: italic bold .8em/ 1.2 Arial;
 }
 
 .imgButton {
