@@ -16,7 +16,9 @@ const char * css_test1 = ""
 "}"
 ;
 
-const char * css_test = u8R"(
+const auto css_inline = u8R"(background-color:red;background-color:blue)";
+
+const auto css_test = u8R"(
 
 button#button, #layout .button{
     -moz-appearance: none;
@@ -65,7 +67,8 @@ struct Css final : SimpAC::CACStream {
 
 int main() {
     Css parser;
-    parser.Load({ css_test, css_test + std::strlen(css_test) });
+    //parser.Load({ css_test, css_test + std::strlen(css_test) });
+    parser.Load({ css_inline, css_inline + std::strlen(css_inline) }, true);
     //std::printf("\nPRESS 'O' to OUTPUT FUNC-LIST\n");
     const char ch = std::getchar();
     //if (ch == 'O' || ch == 'o') {
